@@ -13,6 +13,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/factures', function () {
+    return view('invoice');
 });
+
+
+
+Route::get('/medicament', function () {
+    return view('pages.medicament.create');
+})->name("medicam");
+
+Route::get('/inde-med', function () {
+    return view('pages.medicament.index');
+});
+Route::get('/dashboard', function () {
+    return view('pages.dashboard');
+})->name("dashboad");
