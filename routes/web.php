@@ -29,3 +29,7 @@ Route::get('/inde-med', function () {
 Route::get('/dashboard', function () {
     return view('pages.dashboard');
 })->name("dashboad");
+
+Route::get('/', function () {
+    return view('home');
+})->name("home");
