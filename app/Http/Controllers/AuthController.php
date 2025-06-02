@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -34,26 +35,30 @@ class AuthController extends Controller
 
         $request->session()->put('user_id', $user->id);
 
-        return redirect()->route('users.show');
+        return redirect()->route('home');
     }
 
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ]);
+   public function login(Request $request)
+{
+    $credentials = $request->only('email', 'password');
 
-        $user = User::where('email', $request->email)->first();
+    if (Auth::attempt($credentials)) {
+        $request->session()->regenerate();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return back()->withErrors(['email' => 'Identifiants invalides']);
+        // Redirection conditionnelle selon l'email
+        if (Auth::user()->email === 'admin@pharma.com') {
+         return redirect()->route('medicaments.index');
+
+        } else {
+            return redirect('/');
         }
-
-        $request->session()->put('user_id', $user->id);
-
-        return redirect()->route('users.show');
     }
+
+    return back()->withErrors([
+        'email' => 'Identifiants invalides.',
+    ]);
+}
+
 
     public function logout(Request $request)
     {

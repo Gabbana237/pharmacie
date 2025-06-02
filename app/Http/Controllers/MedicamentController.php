@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Medicament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MedicamentController extends Controller
 {
@@ -11,7 +12,7 @@ class MedicamentController extends Controller
     public function index()
     {
         $medicaments = Medicament::all();
-        return view('medicaments.index', compact('medicaments'));
+        return view('pages.medicament.index', compact('medicaments'));
     }
 
     // Affiche le formulaire de création
@@ -30,7 +31,12 @@ class MedicamentController extends Controller
             'prix' => 'required|numeric',
             'date_expiration' => 'nullable|date',
             'categorie' => 'nullable|string',
+            'image' => 'nullable|image|max:2048', // max 2 Mo, format image
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('medicaments', 'public');
+        }
 
         Medicament::create($validated);
 
@@ -63,7 +69,16 @@ class MedicamentController extends Controller
             'prix' => 'required|numeric',
             'date_expiration' => 'nullable|date',
             'categorie' => 'nullable|string',
+            'image' => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            // Supprimer ancienne image si existante
+            if ($medicament->image) {
+                Storage::disk('public')->delete($medicament->image);
+            }
+            $validated['image'] = $request->file('image')->store('medicaments', 'public');
+        }
 
         $medicament->update($validated);
 
@@ -74,6 +89,12 @@ class MedicamentController extends Controller
     public function destroy($id)
     {
         $medicament = Medicament::findOrFail($id);
+
+        // Supprimer image si existante
+        if ($medicament->image) {
+            Storage::disk('public')->delete($medicament->image);
+        }
+
         $medicament->delete();
 
         return redirect()->route('medicaments.index')->with('success', 'Médicament supprimé avec succès.');

@@ -5,77 +5,79 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Medicament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
 {
     public function generateInvoice($id)
-{
-    $order = Order::with(['medicament', 'user'])->findOrFail($id);
+    {
+        $order = Order::with(['medicament', 'user'])->findOrFail($id);
 
-    if ($order->user_id != session('user_id')) {
-        abort(403);
+        if ($order->user_id != Auth::id()) {
+            abort(403);
+        }
+
+        $prix_unitaire = $order->medicament->prix;
+        $quantite = $order->quantity;
+        $montant_HT = $prix_unitaire * $quantite;
+        $tva = 0.18; // 18%
+        $montant_TVA = $montant_HT * $tva;
+        $montant_TTC = $montant_HT + $montant_TVA;
+
+        $pdf = Pdf::loadView('orders.invoice', compact('order', 'montant_HT', 'montant_TVA', 'montant_TTC'));
+
+        return $pdf->download('facture_commande_'.$order->id.'.pdf');
     }
 
-    $prix_unitaire = $order->medicament->prix;
-    $quantite = $order->quantity;
-    $montant_HT = $prix_unitaire * $quantite;
-    $tva = 0.18; // 18%
-    $montant_TVA = $montant_HT * $tva;
-    $montant_TTC = $montant_HT + $montant_TVA;
+    public function store(Request $request, $medicament_id)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
 
-    $pdf = Pdf::loadView('orders.invoice', compact('order', 'montant_HT', 'montant_TVA', 'montant_TTC'));
+        $medicament = Medicament::findOrFail($medicament_id);
 
-    return $pdf->download('facture_commande_'.$order->id.'.pdf');
-}
+        // Vérifier le stock disponible
+        if ($request->quantity > $medicament->quantite_en_stock) {
+            return redirect()->back()->with('error', 'Stock insuffisant pour ce médicament.');
+        }
 
-   public function store(Request $request, $medicament_id)
-{
-    $request->validate([
-        'quantity' => 'required|integer|min:1',
-    ]);
+        // Créer la commande
+        $order = Order::create([
+            'user_id' => Auth::id(),
+            'medicament_id' => $medicament_id,
+            'quantity' => $request->quantity,
+        ]);
 
-    $medicament = Medicament::findOrFail($medicament_id);
+        // Déduire le stock
+        $medicament->quantite_en_stock -= $request->quantity;
+        $medicament->save();
 
-    // Vérifier le stock disponible
-    if ($request->quantity > $medicament->quantite_en_stock) {
-        return redirect()->back()->with('error', 'Stock insuffisant pour ce médicament.');
+        return redirect()->route('orders.show', $order->id)
+                         ->with('success', 'Commande effectuée avec succès !');
     }
-
-    // Créer la commande
-    $order = Order::create([
-        'user_id'       => session('user_id'),
-        'medicament_id' => $medicament_id,
-        'quantity'      => $request->quantity,
-    ]);
-
-    // Déduire le stock
-    $medicament->quantite_en_stock -= $request->quantity;
-    $medicament->save();
-
-    return redirect()->route('orders.show', $order->id)
-                     ->with('success', 'Commande effectuée avec succès !');
-}
-
-
 
     public function index()
     {
-        $orders = Order::with('medicament')->where('user_id', session('user_id'))->get();
+        $orders = Order::with('medicament')->where('user_id', Auth::id())->get();
         return view('orders.index', compact('orders'));
     }
 
     public function show($id)
-{
-    $order = Order::with(['medicament', 'user'])->findOrFail($id);
+    {
+        $order = Order::with(['medicament', 'user'])->findOrFail($id);
 
-    // sécurité : s'assurer que l'utilisateur ne voit que ses commandes
-    if ($order->user_id != session('user_id')) {
-        abort(403, 'Accès interdit.');
+        // Pour debug, tu peux commenter la ligne dd() après vérification
+        // dd([
+        //     'auth_user_id' => Auth::id(),
+        //     'order_user_id' => $order->user_id,
+        // ]);
+
+        if ($order->user_id != Auth::id()) {
+            abort(403, 'Accès interdit.');
+        }
+
+        return view('orders.show', compact('order'));
     }
-
-    return view('orders.show', compact('order'));
 }
-
-}
-
