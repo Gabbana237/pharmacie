@@ -9,7 +9,7 @@
         <button>Découvrir nos services</button>
     </section>
 
-    <section class="features">
+    <section id="services" class="features">
         <div class="feature">
             <h2>Conseils Santé</h2>
             <p>Des pharmaciens qualifiés pour vous conseiller et vous accompagner au quotidien.</p>
@@ -24,7 +24,7 @@
         </div>
     </section>
 
-    <section class="medicaments-section">
+    <section id="medicaments" class="medicaments-section">
         <h1>Nos Médicaments</h1>
         <p>Voici une sélection de nos produits disponibles en pharmacie.</p>
 

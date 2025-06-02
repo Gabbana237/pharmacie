@@ -6,10 +6,10 @@
         </div>
         <nav class="navbar">
             <ul class="nav-links">
-                <li><a href="index.html">Accueil</a></li>
-                <li><a href="#">Médicaments</a></li>
-                <li><a href="#">Services</a></li>
-                <li><a href="#">Contact</a></li>
+                <li><a href="{{ route('home') }}">Accueil</a></li>
+                <li><a href="{{ route('home') }}#medicaments" class="scroll-link">Médicaments</a></li>
+                <li><a href="{{ route('home') }}#services" class="scroll-link">Services</a></li>
+                <li><a href="{{ route('contact') }}">Contact</a></li>
             </ul>
             <div class="hamburger">
                 <span class="bar"></span>
